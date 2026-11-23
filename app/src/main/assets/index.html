@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f172a">
+<link rel="manifest" href="data:application/manifest+json,{&quot;name&quot;:&quot;工匠匯 · 零工直連&quot;,&quot;short_name&quot;:&quot;工匠匯&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;#0f172a&quot;,&quot;theme_color&quot;:&quot;#0d9488&quot;}">
+<title>工匠匯 · 零工直連系統</title>
+<style>
+  :root {
+    --ink: #0f172a;
+    --teal: #0d9488;
+    --teal-dark: #0f766e;
+    --amber: #d97706;
+    --rose: #e11d48;
+    --surface: #f8fafc;
+    --paper: #ffffff;
+    --line: #e2e8f0;
+    --sub: #64748b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: "PingFang HK", "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
+  body { background: var(--surface); color: var(--ink); max-width: 480px; margin: 0 auto; min-height: 100vh; padding-bottom: 72px; }
+
+  /* 自訂深岩灰頂欄 */
+  .top-bar { background: var(--ink); color: #fff; padding: 14px 16px 12px; position: sticky; top: 0; z-index: 50; }
+  .brand-row { display: flex; justify-content: space-between; align-items: center; }
+  .brand-name { font-size: 17px; font-weight: 800; letter-spacing: 0.5px; color: #5eead4; }
+  .no-gps-pill { font-size: 11px; background: #1e293b; border: 1px solid #334155; color: #cbd5e1; padding: 2px 8px; border-radius: 4px; }
+
+  .mode-switch { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 10px; }
+  .mode-btn { padding: 7px 4px; font-size: 12px; font-weight: 700; border-radius: 6px; border: 1px solid #334155; background: #1e293b; color: #94a3b8; cursor: pointer; }
+  .mode-btn.active { background: var(--teal); border-color: var(--teal); color: #fff; }
+
+  /* 推送橫幅 */
+  #toast-push { display: none; position: fixed; top: 8px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 440px; background: var(--ink); color: #fff; border: 1px solid var(--teal); border-radius: 8px; padding: 11px 14px; z-index: 300; font-size: 12px; box-shadow: 0 12px 24px rgba(15,23,42,0.28); }
+
+  .wrap { padding: 12px; }
+  .panel { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+  .panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+  .job-title { font-size: 15px; font-weight: 800; color: var(--ink); }
+  .wage-box { font-size: 14px; font-weight: 800; color: var(--teal-dark); background: #f0fdfa; padding: 3px 8px; border-radius: 6px; white-space: nowrap; }
+
+  .chip { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; margin-right: 4px; margin-top: 4px; }
+  .chip-grp { background: #fef3c7; color: #92400e; }
+  .chip-info { background: #f1f5f9; color: #334155; }
+  .chip-ok { background: #d1fae5; color: #065f46; }
+
+  .detail-txt { font-size: 13px; color: var(--sub); line-height: 1.65; margin-top: 8px; }
+  .detail-txt strong { color: var(--ink); font-weight: 600; }
+
+  .field { margin-bottom: 10px; }
+  .field label { display: block; font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px; }
+  .field input, .field select, .field textarea { width: 100%; padding: 9px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; }
+
+  .act-btn { width: 100%; padding: 10px; border-radius: 6px; border: none; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 6px; }
+  .btn-teal { background: var(--teal); color: #fff; }
+  .btn-dark { background: var(--ink); color: #fff; }
+  .btn-amber { background: var(--amber); color: #fff; }
+  .btn-ghost { background: #fff; color: #334155; border: 1px solid #cbd5e1; }
+  .btn-inline { width: auto; padding: 6px 10px; font-size: 12px; margin-top: 0; }
+
+  /* 底部導覽列 */
+  .dock { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: #fff; border-top: 1px solid var(--line); display: flex; z-index: 50; }
+  .dock-tab { flex: 1; text-align: center; padding: 10px 2px; font-size: 12px; font-weight: 600; color: var(--sub); cursor: pointer; }
+  .dock-tab.active { color: var(--teal-dark); border-top: 2px solid var(--teal); font-weight: 800; }
+
+  /* 對話區 */
+  .thread { height: 290px; overflow-y: auto; background: #f1f5f9; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+  .bubble { max-width: 82%; padding: 8px 11px; border-radius: 8px; font-size: 13px; line-height: 1.45; }
+  .bubble.me { align-self: flex-end; background: var(--teal); color: #fff; }
+  .bubble.them { align-self: flex-start; background: #fff; border: 1px solid var(--line); color: var(--ink); }
+  .bubble-who { font-size: 10px; opacity: 0.75; margin-bottom: 2px; }
+  .preset-row { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; }
+  .preset-btn { white-space: nowrap; font-size: 11px; background: #e2e8f0; color: #1e293b; border: none; padding: 4px 9px; border-radius: 99px; cursor: pointer; }
+
+  /* 評分視窗 */
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.55); z-index: 200; align-items: center; justify-content: center; padding: 16px; }
+  .sheet { background: #fff; border-radius: 10px; padding: 16px; width: 100%; max-width: 390px; }
+</style>
+</head>
+<body>
+
+<div id="toast-push" onclick="this.style.display='none'"></div>
+
+<div class="top-bar">
+  <div class="brand-row">
+    <span class="brand-name">工匠匯 · 零工直連</span>
+    <span class="no-gps-pill">免地圖 · 純文字集合</span>
+  </div>
+  <div class="mode-switch">
+    <button class="mode-btn active" id="m-worker" onclick="setMode('worker')">散工視角</button>
+    <button class="mode-btn" id="m-employer" onclick="setMode('employer')">僱主視角</button>
+    <button class="mode-btn" id="m-admin" onclick="setMode('admin')">管理後台</button>
+  </div>
+</div>
+
+<div class="wrap" id="view"></div>
+<div class="dock" id="dock"></div>
+
+<div class="overlay" id="rate-sheet">
+  <div class="sheet">
+    <div class="job-title" style="margin-bottom:6px;">訂單結算與評分</div>
+    <div class="detail-txt" id="rate-who" style="margin-top:0;margin-bottom:10px;"></div>
+    <div class="field">
+      <label>星級評分</label>
+      <select id="rate-stars">
+        <option value="5">5 星 — 準時可靠 / 結算爽快</option>
+        <option value="4">4 星 — 合作順暢</option>
+        <option value="3">3 星 — 尚可</option>
+        <option value="2">2 星 — 延誤 / 溝通需改善</option>
+        <option value="1">1 星 — 爽約 / 嚴重違規</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>評語</label>
+      <input id="rate-note" placeholder="填寫簡短評語...">
+    </div>
+    <button class="act-btn btn-teal" onclick="confirmRate()">確認提交並完成</button>
+    <button class="act-btn btn-ghost" onclick="closeRate()">取消</button>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'kungjeungwui_v1';
+
+const seed = {
+  mode: 'worker',
+  tab: 'board',
+  groups: ['全部組別', '餐飲宴會組', '倉務理貨組', '活動場務組'],
+  workers: [
+    { id: 'U1', name: '黃志明', tel: '5190****', group: '餐飲宴會組', skill: '樓面/宴會支援', score: 4.9, auth: true },
+    { id: 'U2', name: '周家朗', tel: '6482****', group: '倉務理貨組', skill: '叉車/點貨', score: 4.6, auth: true },
+    { id: 'U3', name: '何婉儀', tel: '9301****', group: '活動場務組', skill: '場地登記/引導', score: 4.8, auth: true }
+  ],
+  posts: [
+    {
+      id: 'P1',
+      title: '尖沙咀婚宴晚市支援',
+      employer: '麗景飲食集團',
+      group: '餐飲宴會組',
+      wage: 'HK$90/hr',
+      schedule: '今晚 17:30 - 23:30',
+      venue: '尖沙咀彌敦道酒店大堂側門集合（純文字地址，免地圖）',
+      slots: 6,
+      applicants: ['U1']
+    },
+    {
+      id: 'P2',
+      title: '葵涌貨櫃碼頭後勤理貨',
+      employer: '東亞供應鏈',
+      group: '倉務理貨組',
+      wage: 'HK$760/更',
+      schedule: '明早 08:00 - 17:00',
+      venue: '葵涌貨櫃碼頭南路8號地下登記處',
+      slots: 4,
+      applicants: []
+    }
+  ],
+  orders: [
+    {
+      id: 'TK-309',
+      title: '灣仔書展場地佈置幫手',
+      worker: '黃志明',
+      employer: '創藝展覽策劃',
+      wage: 'HK$650',
+      code: '7382',
+      stage: '待報到', // 待報到 -> 已開工 -> 已收工待評 -> 已結案
+      rated: false
+    }
+  ],
+  chats: [
+    { from: 'employer', sender: '麗景飲食集團', text: '請問今晚17:30前能否到齊？需穿深色長褲。' },
+    { from: 'worker', sender: '黃志明', text: '可以，我會提早15分鐘到側門報到。' }
+  ],
+  activeOrderId: null
+};
+
+let db = JSON.parse(localStorage.getItem(STORAGE_KEY)) || seed;
+
+function persist() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+}
+
+function notify(title, msg) {
+  const el = document.getElementById('toast-push');
+  el.innerHTML = `<div style="font-weight:800;color:#5eead4;margin-bottom:2px;">推送通知 · ${title}</div><div>${msg}</div>`;
+  el.style.display = 'block';
+  clearTimeout(window.__t);
+  window.__t = setTimeout(() => { el.style.display = 'none'; }, 4200);
+}
+
+function setMode(mode) {
+  db.mode = mode;
+  ['worker', 'employer', 'admin'].forEach(m => {
+    document.getElementById('m-' + m).classList.toggle('active', m === mode);
+  });
+  if (mode === 'worker') db.tab = 'board';
+  if (mode === 'employer') db.tab = 'create';
+  if (mode === 'admin') db.tab = 'groups';
+  persist();
+  draw();
+}
+
+function setTab(tab) {
+  db.tab = tab;
+  persist();
+  draw();
+}
+
+function drawDock() {
+  const dock = document.getElementById('dock');
+  const map = {
+    worker: [
+      { k: 'board', n: '接單列表' },
+      { k: 'my_orders', n: '工單進度' },
+      { k: 'im', n: '即時對話' },
+      { k: 'me', n: '登記資料' }
+    ],
+    employer: [
+      { k: 'create', n: '發佈崗位' },
+      { k: 'match', n: '配對錄用' },
+      { k: 'emp_orders', n: '核銷出糧' },
+      { k: 'im', n: '即時對話' }
+    ],
+    admin: [
+      { k: 'groups', n: '分組管理' },
+      { k: 'all_orders', n: '訂單總覽' },
+      { k: 'push_box', n: '系統推送' }
+    ]
+  };
+  dock.innerHTML = map[db.mode].map(item => `
+    <div class="dock-tab ${db.tab === item.k ? 'active' : ''}" onclick="setTab('${item.k}')">${item.n}</div>
+  `).join('');
+}
+
+function draw() {
+  drawDock();
+  const view = document.getElementById('view');
+
+  if (db.mode === 'worker') {
+    if (db.tab === 'board') {
+      view.innerHTML = db.posts.map(p => {
+        const joined = p.applicants.includes('U1');
+        return `
+        <div class="panel">
+          <div class="panel-head">
+            <div class="job-title">${p.title}</div>
+            <div class="wage-box">${p.wage}</div>
+          </div>
+          <span class="chip chip-grp">分組：${p.group}</span>
+          <span class="chip chip-info">已報 ${p.applicants.length}/${p.slots} 人</span>
+          <div class="detail-txt">
+            <strong>僱主：</strong>${p.employer}<br>
+            <strong>時段：</strong>${p.schedule}<br>
+            <strong>集合點：</strong>${p.venue}
+          </div>
+          <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-top:8px;">
+            <button class="act-btn ${joined ? 'btn-ghost' : 'btn-teal'}" ${joined ? 'disabled' : ''} onclick="joinPost('${p.id}')">
+              ${joined ? '已報名配對' : '立即報名'}
+            </button>
+            <button class="act-btn btn-ghost" onclick="setTab('im')">對話</button>
+          </div>
+        </div>`;
+      }).join('');
+    } else if (db.tab === 'my_orders') {
+      view.innerHTML = db.orders.map(o => `
+        <div class="panel">
+          <div class="panel-head">
+            <div class="job-title">${o.title}</div>
+            <span class="chip chip-ok">${o.stage}</span>
+          </div>
+          <div class="detail-txt">
+            <strong>單號：</strong>${o.id} · <strong>薪酬：</strong>${o.wage}<br>
+            <strong>僱主：</strong>${o.employer}
+          </div>
+          ${o.stage === '待報到' ? `<button class="act-btn btn-teal" onclick="doCheckin('${o.id}')">輸入4位報到碼開工</button>` : ''}
+          ${o.stage === '已開工' ? `<button class="act-btn btn-amber" onclick="doCheckout('${o.id}')">申報收工</button>` : ''}
+          ${o.stage === '已收工待評' && !o.rated ? `<button class="act-btn btn-dark" onclick="openRate('${o.id}', '僱主：${o.employer}')">填寫評分</button>` : ''}
+          ${o.stage === '已結案' ? `<div class="chip chip-ok" style="margin-top:8px;">已完成結案與評分</div>` : ''}
+        </div>
+      `).join('');
+    } else if (db.tab === 'im') {
+      drawChat(view, 'worker');
+    } else if (db.tab === 'me') {
+      const w = db.workers[0];
+      view.innerHTML = `
+        <div class="panel">
+          <div class="panel-head"><div class="job-title">散工登記檔案</div><span class="chip chip-ok">已核實</span></div>
+          <div class="field"><label>姓名</label><input id="f-name" value="${w.name}"></div>
+          <div class="field"><label>電話</label><input id="f-tel" value="${w.tel}"></div>
+          <div class="field"><label>擅長工種</label><input id="f-skill" value="${w.skill}"></div>
+          <div class="field"><label>目前分組</label><input value="${w.group}" disabled></div>
+          <div class="detail-txt" style="margin-top:0;">綜合評分：<strong>${w.score} / 5.0</strong></div>
+          <button class="act-btn btn-teal" onclick="saveMe()">儲存修改</button>
+        </div>
+      `;
+    }
+  } else if (db.mode === 'employer') {
+    if (db.tab === 'create') {
+      view.innerHTML = `
+        <div class="panel">
+          <div class="job-title" style="margin-bottom:10px;">發佈新零工崗位（免地圖）</div>
+          <div class="field"><label>崗位名稱</label><input id="p-title" placeholder="輸入職位名稱"></div>
+          <div class="field"><label>推送分組</label>
+            <select id="p-group">${db.groups.map(g => `<option>${g}</option>`).join('')}</select>
+          </div>
+          <div class="field"><label>薪酬標準</label><input id="p-wage" placeholder="例如：HK$85/hr 或 HK$700/更"></div>
+          <div class="field"><label>工作時間</label><input id="p-sched" placeholder="例如：週六 12:00 - 20:00"></div>
+          <div class="field"><label>集合地點說明（純文字）</label><textarea id="p-venue" rows="2" placeholder="輸入大廈/出口/集合位置"></textarea></div>
+          <div class="field"><label>名額人數</label><input id="p-slots" type="number" value="3"></div>
+          <button class="act-btn btn-teal" onclick="createPost()">發佈並推送</button>
+        </div>
+      `;
+    } else if (db.tab === 'match') {
+      view.innerHTML = db.posts.map(p => `
+        <div class="panel">
+          <div class="panel-head"><div class="job-title">${p.title}</div><div class="wage-box">${p.wage}</div></div>
+          <div class="detail-txt">分組：${p.group} · 報名人數：${p.applicants.length}/${p.slots}</div>
+          <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line);">
+            ${p.applicants.length === 0 ? '<div class="detail-txt" style="margin-top:0;">暫無報名者</div>' : p.applicants.map(uid => {
+              const u = db.workers.find(x => x.id === uid) || { name: '黃志明', score: 4.9 };
+              return `<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+                <span style="font-size:13px;font-weight:700;">${u.name}（${u.score}分）</span>
+                <button class="act-btn btn-teal btn-inline" onclick="assignOrder('${p.id}','${u.name}')">確認錄用</button>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+      `).join('');
+    } else if (db.tab === 'emp_orders') {
+      view.innerHTML = db.orders.map(o => `
+        <div class="panel">
+          <div class="panel-head"><div class="job-title">${o.title}</div><span class="chip chip-ok">${o.stage}</span></div>
+          <div class="detail-txt">
+            <strong>散工：</strong>${o.worker} · <strong>薪酬：</strong>${o.wage}<br>
+            <strong>現場報到碼：</strong><span style="font-size:15px;font-weight:800;color:var(--teal-dark);">${o.code}</span>
+          </div>
+          ${o.stage === '已收工待評' ? `<button class="act-btn btn-dark" onclick="openRate('${o.id}', '散工：${o.worker}')">確認出糧並評分</button>` : ''}
+        </div>
+      `).join('');
+    } else if (db.tab === 'im') {
+      drawChat(view, 'employer');
+    }
+  } else {
+    if (db.tab === 'groups') {
+      view.innerHTML = `
+        <div class="panel">
+          <div class="job-title" style="margin-bottom:8px;">建立散工分組</div>
+          <div style="display:flex;gap:8px;">
+            <input id="g-new" style="flex:1;padding:8px;border:1px solid #cbd5e1;border-radius:6px;" placeholder="新分組名稱">
+            <button class="act-btn btn-teal btn-inline" onclick="addGrp()">新增</button>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="job-title" style="margin-bottom:8px;">散工分組調配</div>
+          ${db.workers.map((w, i) => `
+            <div style="padding:8px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;">
+              <div><strong style="font-size:13px;">${w.name}</strong><div style="font-size:11px;color:var(--sub);">${w.skill}</div></div>
+              <select style="padding:5px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px;" onchange="setGrp(${i},this.value)">
+                ${db.groups.filter(g => g !== '全部組別').map(g => `<option ${w.group===g?'selected':''}>${g}</option>`).join('')}
+              </select>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    } else if (db.tab === 'all_orders') {
+      view.innerHTML = `
+        <div class="panel" style="display:grid;grid-template-columns:repeat(3,1fr);text-align:center;gap:6px;">
+          <div><div style="font-size:18px;font-weight:800;color:var(--teal-dark);">${db.workers.length}</div><div style="font-size:11px;color:var(--sub);">登記散工</div></div>
+          <div><div style="font-size:18px;font-weight:800;color:var(--ink);">${db.posts.length}</div><div style="font-size:11px;color:var(--sub);">在招崗位</div></div>
+          <div><div style="font-size:18px;font-weight:800;color:var(--amber);">${db.orders.length}</div><div style="font-size:11px;color:var(--sub);">工單總數</div></div>
+        </div>
+      ` + db.orders.map(o => `
+        <div class="panel">
+          <div class="panel-head"><div class="job-title">${o.id} · ${o.title}</div><span class="chip chip-info">${o.stage}</span></div>
+          <div class="detail-txt">${o.worker} ⇄ ${o.employer}（${o.wage}）</div>
+        </div>
+      `).join('');
+    } else if (db.tab === 'push_box') {
+      view.innerHTML = `
+        <div class="panel">
+          <div class="job-title" style="margin-bottom:10px;">發送群組推送</div>
+          <div class="field"><label>接收分組</label><select id="ps-grp">${db.groups.map(g=>`<option>${g}</option>`).join('')}</select></div>
+          <div class="field"><label>標題</label><input id="ps-title" value="即時補位通知"></div>
+          <div class="field"><label>內容</label><textarea id="ps-body" rows="2">有新崗位開放報名，請盡快查看。</textarea></div>
+          <button class="act-btn btn-amber" onclick="firePush()">發送推送</button>
+        </div>
+      `;
+    }
+  }
+}
+
+function joinPost(id) {
+  const p = db.posts.find(x => x.id === id);
+  if (p && !p.applicants.includes('U1')) {
+    p.applicants.push('U1');
+    persist();
+    notify('報名已送出', `已向「${p.employer}」提交 ${p.title} 報名`);
+    draw();
+  }
+}
+
+function createPost() {
+  const title = document.getElementById('p-title').value.trim();
+  const group = document.getElementById('p-group').value;
+  const wage = document.getElementById('p-wage').value.trim();
+  const schedule = document.getElementById('p-sched').value.trim() || '待定';
+  const venue = document.getElementById('p-venue').value.trim();
+  const slots = parseInt(document.getElementById('p-slots').value) || 1;
+  if (!title || !wage || !venue) return alert('請填寫崗位名稱、薪酬及集合地點');
+  db.posts.unshift({ id: 'P' + Date.now().toString().slice(-4), title, employer: '本僱主帳號', group, wage, schedule, venue, slots, applicants: [] });
+  persist();
+  notify(`已推送至「${group}」`, `${title}（${wage}）已上架`);
+  setTab('match');
+}
+
+function assignOrder(postId, workerName) {
+  const p = db.posts.find(x => x.id === postId);
+  const code = String(Math.floor(1000 + Math.random() * 9000));
+  db.orders.unshift({ id: 'TK-' + Math.floor(100 + Math.random() * 900), title: p.title, worker: workerName, employer: p.employer, wage: p.wage, code, stage: '待報到', rated: false });
+  persist();
+  notify('錄用配對成功', `已錄用 ${workerName}，報到碼 ${code}`);
+  setTab('emp_orders');
+}
+
+function doCheckin(id) {
+  const o = db.orders.find(x => x.id === id);
+  const ans = prompt(`輸入4位現場報到碼（測試碼：${o.code}）：`);
+  if (ans === o.code) {
+    o.stage = '已開工';
+    persist();
+    notify('報到完成', `${o.id} 已轉為已開工`);
+    draw();
+  } else if (ans !== null) {
+    alert('報到碼不正確');
+  }
+}
+
+function doCheckout(id) {
+  const o = db.orders.find(x => x.id === id);
+  o.stage = '已收工待評';
+  persist();
+  notify('已申報收工', '等待雙方完成評分結算');
+  draw();
+}
+
+function openRate(id, label) {
+  db.activeOrderId = id;
+  document.getElementById('rate-who').textContent = label;
+  document.getElementById('rate-sheet').style.display = 'flex';
+}
+
+function closeRate() {
+  document.getElementById('rate-sheet').style.display = 'none';
+}
+
+function confirmRate() {
+  const o = db.orders.find(x => x.id === db.activeOrderId);
+  if (o) {
+    o.stage = '已結案';
+    o.rated = true;
+    persist();
+    closeRate();
+    notify('工單已結案', `${o.id} 評分已儲存`);
+    draw();
+  }
+}
+
+function drawChat(view, role) {
+  const tips = role === 'worker'
+    ? ['請問集合位置在哪？', '我已到場', '需自備用品嗎？']
+    : ['請準時到場報到', '報到碼已發出', '今日合作愉快'];
+  view.innerHTML = `
+    <div class="panel">
+      <div class="job-title" style="margin-bottom:8px;">即時訊息</div>
+      <div class="thread" id="thread-box">
+        ${db.chats.map(c => `<div class="bubble ${c.from === role ? 'me' : 'them'}"><div class="bubble-who">${c.sender}</div>${c.text}</div>`).join('')}
+      </div>
+      <div class="preset-row">${tips.map(t => `<button class="preset-btn" onclick="sendMsg('${t}')">${t}</button>`).join('')}</div>
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <input id="msg-inp" style="flex:1;padding:8px;border:1px solid #cbd5e1;border-radius:6px;" placeholder="輸入訊息..." onkeydown="if(event.key==='Enter')sendMsg()">
+        <button class="act-btn btn-teal btn-inline" onclick="sendMsg()">傳送</button>
+      </div>
+    </div>
+  `;
+  const box = document.getElementById('thread-box');
+  if (box) box.scrollTop = box.scrollHeight;
+}
+
+function sendMsg(preset) {
+  const inp = document.getElementById('msg-inp');
+  const txt = preset || (inp ? inp.value.trim() : '');
+  if (!txt) return;
+  const sender = db.mode === 'worker' ? '黃志明' : '麗景飲食集團';
+  db.chats.push({ from: db.mode, sender, text: txt });
+  persist();
+  draw();
+}
+
+function saveMe() {
+  db.workers[0].name = document.getElementById('f-name').value;
+  db.workers[0].tel = document.getElementById('f-tel').value;
+  db.workers[0].skill = document.getElementById('f-skill').value;
+  persist();
+  alert('已儲存');
+}
+
+function addGrp() {
+  const v = document.getElementById('g-new').value.trim();
+  if (v && !db.groups.includes(v)) {
+    db.groups.push(v);
+    persist();
+    draw();
+  }
+}
+
+function setGrp(idx, g) {
+  db.workers[idx].group = g;
+  persist();
+  notify('分組已更新', `${db.workers[idx].name} → ${g}`);
+}
+
+function firePush() {
+  notify(document.getElementById('ps-grp').value + ' · ' + document.getElementById('ps-title').value, document.getElementById('ps-body').value);
+}
+
+draw();
+</script>
+</body>
+</html>
